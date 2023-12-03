@@ -1,0 +1,21 @@
+{
+  "name": "com.chromaticdream.tasuke",
+  "displayName": "Tasuke Board",
+  "version": "1.0.0",
+  "unity": "2020.3",
+  "description": "A unity plugin to help organise assets",
+  "category": "Editor Tools",
+  "keywords": ["board", "tool", "tasuke"],
+  "author": {
+    "name": "pierrick-c",
+    "email": "chromaticd@gmail.com",
+    "url": "http://www.chromatic-dream.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Pk-c/Tasuke.git"
+  },
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Pk-c/issues"
+  }
