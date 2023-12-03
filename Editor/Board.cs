@@ -290,34 +290,31 @@ namespace TasukeChan
 
         public void HandleMove(Event e)
         {
-            if (!ontoSomething)
+            if (e.type == EventType.MouseDown && !ontoSomething)
             {
-                if (e.type == EventType.MouseDown)
+                inspectedNode = null;
+                lastmousePos = e.mousePosition;
+            }
+
+            if(e.button == 2 && e.type == EventType.MouseDrag) 
+            {
+                Vector2 mouseDelta = e.mousePosition - lastmousePos;
+
+                for ( int n = 0; n < ObjectNodes.Count; n++)
                 {
-                    inspectedNode = null;
-                    lastmousePos = e.mousePosition;
+                    ObjectNodes[n].rect.position += mouseDelta;
                 }
 
-                if( e.type == EventType.MouseDrag) 
+                for (int n = 0; n < CatNodes.Count; n++)
                 {
-                    Vector2 mouseDelta = e.mousePosition - lastmousePos;
-
-                    for ( int n = 0; n < ObjectNodes.Count; n++)
-                    {
-                        ObjectNodes[n].rect.position += mouseDelta;
-                    }
-
-                    for (int n = 0; n < CatNodes.Count; n++)
-                    {
-                        CatNodes[n].rect.position += mouseDelta;
-                    }
-
-                    panOffset += mouseDelta;
-
-                    lastmousePos = e.mousePosition;
-
-                    e.Use();
+                    CatNodes[n].rect.position += mouseDelta;
                 }
+
+                panOffset += mouseDelta;
+
+                lastmousePos = e.mousePosition;
+
+                e.Use();
             }
         }
 
