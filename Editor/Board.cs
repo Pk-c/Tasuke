@@ -551,25 +551,24 @@ namespace TasukeChan
 
         private void DrawGrid()
         {
-            var widthDivs = Mathf.CeilToInt(position.width / gridSize.x);
-            var heightDivs = Mathf.CeilToInt(position.height / gridSize.y);
+            int widthDivs = Mathf.CeilToInt(position.width / gridSize.x);
+            int heightDivs = Mathf.CeilToInt(position.height / gridSize.y);
 
             Handles.BeginGUI();
-            Handles.color = new Color(0.5f, 0.5f, 0.5f, 0.5f);
+            Handles.color = new Color(0.5f, 0.5f, 0.5f, 0.4f);
 
-            // Set the line thickness (1 is a thin line)
-            float lineThickness = 1.0f;
+            Vector3 newOffset = new Vector3(panOffset.x % gridSize.x, panOffset.y % gridSize.y, 0);
 
             for (int i = 0; i < widthDivs; i++)
             {
-                var newX = gridSize.x * i + panOffset.x % gridSize.x;
-                Handles.DrawAAPolyLine(lineThickness, new Vector3(newX, 0, 0), new Vector3(newX, position.height, 0));
+                Handles.DrawLine(new Vector3(gridSize.x * i, -gridSize.y, 0) + newOffset,
+                                 new Vector3(gridSize.x * i, position.height, 0) + newOffset);
             }
 
             for (int j = 0; j < heightDivs; j++)
             {
-                var newY = gridSize.y * j + panOffset.y % gridSize.y;
-                Handles.DrawAAPolyLine(lineThickness, new Vector3(0, newY, 0), new Vector3(position.width, newY, 0));
+                Handles.DrawLine(new Vector3(-gridSize.x, gridSize.y * j, 0) + newOffset,
+                                 new Vector3(position.width, gridSize.y * j, 0) + newOffset);
             }
 
             Handles.EndGUI();
@@ -666,7 +665,7 @@ namespace TasukeChan
 
             if (string.IsNullOrEmpty(path))
             {
-                path = EditorUtility.SaveFilePanel("Save Nodes as Asset", "", "tkboard", "asset");
+                path = EditorUtility.SaveFilePanel("Save Nodes as Asset", Application.dataPath, "tkboard", "asset");
             }
             else
             {
@@ -690,7 +689,7 @@ namespace TasukeChan
 
         private void LoadNodes()
         {
-            string path = EditorUtility.OpenFilePanel("Load Tasuke Board", "", "asset");
+            string path = EditorUtility.OpenFilePanel("Load Tasuke Board", Application.dataPath, "asset");
             LoadData(path);
         }
 
