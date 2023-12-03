@@ -272,19 +272,19 @@ namespace TasukeChan
         {
             if( e.keyCode == KeyCode.Delete && mode == Mode.Select )
             {
-                if( selectedNode != null)
+                if(inspectedNode != null)
                 {
-                    if (selectedNode is CategoryNode)
+                    if (inspectedNode is CategoryNode)
                     {
-                        CatNodes.Remove(selectedNode as CategoryNode);
+                        CatNodes.Remove(inspectedNode as CategoryNode);
                     }
-                    else if( selectedNode is ObjectNode)
+                    else if(inspectedNode is ObjectNode)
                     {
-                        ObjectNodes.Remove(selectedNode as ObjectNode);
+                        ObjectNodes.Remove(inspectedNode as ObjectNode);
                     }
                 }
 
-                selectedNode = null;
+                inspectedNode = null;
             }
         }
 
@@ -648,7 +648,7 @@ namespace TasukeChan
             {
                 if (!string.IsNullOrEmpty(lastLoadedFilePath))
                 {
-                    SaveNode(lastLoadedFilePath);
+                    SaveNode(lastLoadedFilePath,true);
                 }
                 else
                 {
@@ -659,7 +659,7 @@ namespace TasukeChan
 
         }
 
-        private void SaveNode(string filePath = null)
+        private void SaveNode(string filePath = null, bool relative = false)
         {
             string path = filePath;
 
@@ -678,7 +678,7 @@ namespace TasukeChan
                 nodeWrapper.onodes = ObjectNodes;
                 nodeWrapper.cnodes = CatNodes;
 
-                string relativePath = "Assets" + path.Substring(Application.dataPath.Length);
+                string relativePath = relative ? path : "Assets" + path.Substring(Application.dataPath.Length);
 
                 // Save the ScriptableObject as an asset in your project
                 AssetDatabase.CreateAsset(nodeWrapper, relativePath);
@@ -697,13 +697,13 @@ namespace TasukeChan
         {
             if(!string.IsNullOrEmpty(path) && File.Exists(path))
             {
-                lastLoadedFilePath = path;
                 ObjectNodes.Clear();
                 CatNodes.Clear();
                 windowsTitle = Path.GetFileNameWithoutExtension(path);
                 EditorWindow.GetWindow(typeof(Board)).titleContent = new GUIContent(windowsTitle, "");
 
                 string relativePath = relative ? path : "Assets" + path.Substring(Application.dataPath.Length);
+                lastLoadedFilePath = relativePath;
                 TkData nodeWrapper = AssetDatabase.LoadAssetAtPath<TkData>(relativePath);
 
                 ObjectNodes = nodeWrapper.onodes;
