@@ -13,7 +13,7 @@ namespace TasukeChan
 
             if (obj is TkData)
             {
-                Board.Load(path,true);
+                TasukeBoard.Load(path,true);
                 return true;
             }
 

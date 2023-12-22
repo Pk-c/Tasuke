@@ -5,7 +5,7 @@ namespace TasukeChan
 {
     public class TkData : ScriptableObject
     {
-        public List<CategoryNode> cnodes;
-        public List<ObjectNode> onodes;
+        public List<TCategoryNode> cnodes;
+        public List<TObjectNode> onodes;
     }
 }
