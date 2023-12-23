@@ -275,6 +275,11 @@ namespace TasukeChan
                             selectedNodes.Clear();
                             selectedNodes.Add(nodeUnderMouse);
                             isDragging = true;
+
+                            if (nodeUnderMouse is TObjectNode)
+                            {
+                                Selection.objects = new Object[1] { ((TObjectNode)(nodeUnderMouse)).obj };
+                            }
                         }
                         else
                         {
@@ -401,6 +406,14 @@ namespace TasukeChan
                     }
                 }
             }
+
+            List<Object> objects = new List<Object>();
+            foreach( TObjectNode node in selectedNodes.OfType<TObjectNode>() )
+            {
+                objects.Add(node.obj);
+            }
+
+            Selection.objects = objects.ToArray();
         }
 
         private void DrawSelectionRect()
@@ -671,7 +684,12 @@ namespace TasukeChan
                 if (node is TObjectNode)
                 {
                     TObjectNode objectNode = (TObjectNode)node;
-                    GUI.Box(zoomed, node.title, selected ? selectedNodeStyle : normalNodeStyle);
+                    GUI.Box(zoomed, node.title, normalNodeStyle);
+
+                    if (selected)
+                    {
+                        GUI.Box(zoomed, node.title, selectedNodeStyle);
+                    }
 
                     GUIContent iconContent = EditorGUIUtility.ObjectContent(objectNode.obj, objectNode.GetType());
                     Texture iconTexture = iconContent.image;
@@ -745,7 +763,7 @@ namespace TasukeChan
             Handles.BeginGUI();
             Handles.color = new Color(0.5f, 0.5f, 0.5f, 0.4f);
 
-            Vector3 newOffset = new Vector3(_zoomCoordsOrigin.x % size, _zoomCoordsOrigin.y % size, 0);
+            Vector3 newOffset = -new Vector3(_zoomCoordsOrigin.x % size, _zoomCoordsOrigin.y % size, 0);
 
             for (int i = 0; i < widthDivs; i++)
             {
