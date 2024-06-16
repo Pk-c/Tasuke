@@ -74,6 +74,8 @@ namespace TasukeChan
         private GUIStyle resizeHandleStyle = new GUIStyle();
         private GUIStyle headerCategoryStyle = new GUIStyle();
         private GUIStyle headerTitleStyle = new GUIStyle();
+        private GUIStyle textStyle = new GUIStyle();
+        private GUIStyle backgroundStyle = new GUIStyle();
 
         //Texture
         Texture2D CategoryTex = null;
@@ -82,6 +84,7 @@ namespace TasukeChan
         Texture2D Tasuke = null;
         Texture2D Header = null;
         Texture2D ResizeTexture = null;
+        Texture2D RoundTexture = null;
 
         //Category
         private Color PickedColor = Color.white;
@@ -142,6 +145,7 @@ namespace TasukeChan
             Tasuke = AssetDatabase.LoadAssetAtPath<Texture2D>(texturePath + "Tasuke.png");
             Header = AssetDatabase.LoadAssetAtPath<Texture2D>(texturePath + "Header.png");
             ResizeTexture = AssetDatabase.LoadAssetAtPath<Texture2D>(texturePath + "Resize.png");
+            RoundTexture = MakeRoundedRectTexture(400, 200, 20, new Color(0.2f, 0.2f, 0.2f, 0.8f));
 
             // Load icons and set up menu options
             GUIContent loadIcon = EditorGUIUtility.IconContent("Folder Icon");
@@ -210,6 +214,14 @@ namespace TasukeChan
             selectedNodeStyle = new GUIStyle(GUI.skin.box);
             selectedNodeStyle.fontStyle = FontStyle.Bold;
             selectedNodeStyle.normal.background = NodeTex;
+
+            textStyle = new GUIStyle();
+            textStyle.fontSize = 40;
+            textStyle.fontStyle = FontStyle.Bold;
+            textStyle.alignment = TextAnchor.MiddleCenter;
+            textStyle.normal.textColor = Color.white;
+            backgroundStyle = new GUIStyle(GUI.skin.box);
+            backgroundStyle.normal.background = RoundTexture;
         }
 
         #region Zoom
@@ -313,6 +325,8 @@ namespace TasukeChan
                             isSelecting = true;
                             selectedNodes.Clear();
                         }
+
+                        e.Use();
                     }
                     break;
                 case EventType.MouseUp:
@@ -830,26 +844,30 @@ namespace TasukeChan
 
         public void OnGUI()
         {
-            BuildStyle();
+            if (Application.isPlaying)
+                HandlePlayMode();
+            else
+            {
+                BuildStyle();
 
-            _zoomArea = new Rect(0.0f, 0.0f, position.width, position.height);
+                _zoomArea = new Rect(0.0f, 0.0f, position.width, position.height);
 
-            HandleZoomAndPan();
+                HandleZoomAndPan();
 
-            Vector2 zoomedMousePosition = ConvertScreenCoordsToZoomCoords(Event.current.mousePosition);
+                Vector2 zoomedMousePosition = ConvertScreenCoordsToZoomCoords(Event.current.mousePosition);
 
-            HandleSelectEvent(Event.current,zoomedMousePosition);
-            DrawGrid();
-            DrawZoomArea();
-            DrawNonZoomArea();
-            DrawSelectionRect();
-            HandleDragAndDrop();
-            UpdateContextMenu();
-            HandleRemove(Event.current);
-            DrawMenuBar();
-            HandleQuickSave();
-            HandlePlayMode();
-            Repaint();
+                HandleSelectEvent(Event.current, zoomedMousePosition);
+                DrawGrid();
+                DrawZoomArea();
+                DrawNonZoomArea();
+                DrawSelectionRect();
+                HandleDragAndDrop();
+                UpdateContextMenu();
+                HandleRemove(Event.current);
+                DrawMenuBar();
+                HandleQuickSave();
+                Repaint();
+            }
         }
         #endregion
 
@@ -923,25 +941,13 @@ namespace TasukeChan
 
         public void HandlePlayMode()
         {
-            if (Application.isPlaying)
-            {
-                GUIStyle textStyle;
-                GUIStyle backgroundStyle;
-                textStyle = new GUIStyle();
-                textStyle.fontSize = 40;
-                textStyle.fontStyle = FontStyle.Bold;
-                textStyle.alignment = TextAnchor.MiddleCenter;
-                textStyle.normal.textColor = Color.white;
-                backgroundStyle = new GUIStyle(GUI.skin.box);
-                backgroundStyle.normal.background = MakeRoundedRectTexture(400, 200, 20, new Color(0.2f, 0.2f, 0.2f, 0.8f));
-                float windowWidth = position.width;
-                float windowHeight = position.height;
-                Vector2 textSize = textStyle.CalcSize(new GUIContent("APPLICATION IS PLAYING"));
-                Rect backgroundRect = new Rect((windowWidth - textSize.x - 40) / 2, (windowHeight - textSize.y - 20) / 2, textSize.x + 40, textSize.y + 20);
-                Rect textRect = new Rect((windowWidth - textSize.x) / 2, (windowHeight - textSize.y) / 2, textSize.x, textSize.y);
-                GUI.Box(backgroundRect, GUIContent.none, backgroundStyle);
-                GUI.Label(textRect, "APPLICATION IS PLAYING", textStyle);
-            }
+            float windowWidth = position.width;
+            float windowHeight = position.height;
+            Vector2 textSize = textStyle.CalcSize(new GUIContent("APPLICATION IS PLAYING"));
+            Rect backgroundRect = new Rect((windowWidth - textSize.x - 40) / 2, (windowHeight - textSize.y - 20) / 2, textSize.x + 40, textSize.y + 20);
+            Rect textRect = new Rect((windowWidth - textSize.x) / 2, (windowHeight - textSize.y) / 2, textSize.x, textSize.y);
+            GUI.Box(backgroundRect, GUIContent.none, backgroundStyle);
+            GUI.Label(textRect, "APPLICATION IS PLAYING", textStyle);
         }
 
         private Texture2D MakeRoundedRectTexture(int width, int height, int cornerRadius, Color color)
