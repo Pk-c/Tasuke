@@ -80,6 +80,7 @@ namespace TasukeChan
         Texture2D NodeTex = null;
         Texture2D Tasuke = null;
         Texture2D Header = null;
+        Texture2D ResizeTexture = null;
 
         //Category
         private Color PickedColor = Color.white;
@@ -94,6 +95,9 @@ namespace TasukeChan
         private string windowsTitle = "New Tasuke Board";
         private string lastLoadedFilePath = "";
         private float showSaveMessage = 0.0f;
+        private string lastpath = string.Empty;
+
+        private static bool InitFlag = false;
 
         [MenuItem("Window/Tasuke!")]
         public static void Init()
@@ -136,6 +140,7 @@ namespace TasukeChan
             NodeTex = AssetDatabase.LoadAssetAtPath<Texture2D>(texturePath + "NodeSelected.png");
             Tasuke = AssetDatabase.LoadAssetAtPath<Texture2D>(texturePath + "Tasuke.png");
             Header = AssetDatabase.LoadAssetAtPath<Texture2D>(texturePath + "Header.png");
+            ResizeTexture = AssetDatabase.LoadAssetAtPath<Texture2D>(texturePath + "Resize.png");
 
             // Load icons and set up menu options
             GUIContent loadIcon = EditorGUIUtility.IconContent("Folder Icon");
@@ -143,6 +148,25 @@ namespace TasukeChan
             loadIcon.text = "Load Board";
             saveIcon.text = "Save Board";
             menuOptions = new GUIContent[] { loadIcon, saveIcon };
+
+            if (!InitFlag)
+            {
+                EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
+                InitFlag = true;
+            }
+        }
+
+        private void OnPlayModeStateChanged(PlayModeStateChange change)
+        {
+            if (change == PlayModeStateChange.ExitingPlayMode)
+            {
+                if (lastpath != string.Empty)
+                {
+                    TasukeBoard window = (TasukeBoard)EditorWindow.GetWindow(typeof(TasukeBoard));
+                    window.Close();
+                    Load(lastpath,true);
+                }
+            }
         }
 
         void BuildStyle()
@@ -503,7 +527,7 @@ namespace TasukeChan
 
                         foreach (UnityEngine.Object draggedObject in DragAndDrop.objectReferences)
                         {
-                            CreateNode(draggedObject, evt.mousePosition);
+                            CreateNode(draggedObject, ConvertScreenCoordsToZoomCoords(evt.mousePosition));
                         }
                     }
                     break;
@@ -530,11 +554,20 @@ namespace TasukeChan
 
         public void HandleResize(TCategoryNode cat, Event e)
         {
-            Rect zoomed = GetZoomedRectOffset(cat.rect);
-            float handleSize = 20 * _zoom;
-            Rect resizeHandleRect = new Rect(zoomed.xMax, zoomed.yMax, handleSize, handleSize);
-            GUI.Box(resizeHandleRect, "↘");
+            Rect rect = GetZoomedRectOffset(cat.rect);
 
+            float colorFieldSize = Mathf.Max( 10.0f, 20.0f * (kZoomMax - _zoom ));
+            Rect resizeHandleRect = new Rect(
+                rect.xMax - colorFieldSize,
+                rect.yMax - colorFieldSize,
+                colorFieldSize,
+                colorFieldSize);
+
+            
+            // Draw the resize handle
+            GUI.DrawTexture(resizeHandleRect,ResizeTexture);
+
+            // Check for mouse events related to resizing
             if (e.type == EventType.MouseDown && e.button == 0 && resizeHandleRect.Contains(e.mousePosition))
             {
                 ReziseId = cat;
@@ -542,25 +575,31 @@ namespace TasukeChan
                 e.Use();
             }
 
-            if (isRezising && cat == ReziseId )
+            if (isRezising && cat == ReziseId)
             {
                 if (e.type == EventType.MouseDrag)
                 {
-                    Vector2 adjustedMousePos = ConvertScreenCoordsToZoomCoords(e.mousePosition);
-                    float newWidth = Mathf.Max(50, adjustedMousePos.x - cat.rect.x) * _zoom;
-                    float newHeight = Mathf.Max(50, adjustedMousePos.y - cat.rect.y) * _zoom;
+                    // Get the mouse position in zoomed coordinates
+                    Vector2 zoomedMousePos = e.mousePosition;
+
+                    // Calculate the new width and height based on the zoomed mouse position
+                    float newWidth = Mathf.Max(50, zoomedMousePos.x - rect.x);
+                    float newHeight = Mathf.Max(50, zoomedMousePos.y - rect.y);
                     cat.rect.size = new Vector2(newWidth, newHeight);
 
+                    // Update node categories to reflect the new size
                     CheckNodeCategories();
 
+                    e.Use();
                 }
                 else if (e.type == EventType.MouseUp)
                 {
                     isRezising = false;
-
+                    e.Use();
                 }
             }
         }
+
         public void HandleEdit(TCategoryNode node, Event e)
         {
             Rect zoomed = GetZoomedRectOffset(node.rect);
@@ -593,7 +632,7 @@ namespace TasukeChan
             float colorFieldSize = 20;
             float margin = 5;
             Rect colorFieldRect = new Rect(
-                rect.xMax - colorFieldSize - margin,
+                rect.xMin + colorFieldSize/2.0f,
                 rect.yMax - colorFieldSize - margin,
                 colorFieldSize,
                 colorFieldSize);
@@ -800,6 +839,7 @@ namespace TasukeChan
             HandleRemove(Event.current);
             DrawMenuBar();
             HandleQuickSave();
+            HandlePlayMode();
             Repaint();
         }
         #endregion
@@ -872,6 +912,63 @@ namespace TasukeChan
 
         }
 
+        public void HandlePlayMode()
+        {
+            if (Application.isPlaying)
+            {
+                GUIStyle textStyle;
+                GUIStyle backgroundStyle;
+                textStyle = new GUIStyle();
+                textStyle.fontSize = 40;
+                textStyle.fontStyle = FontStyle.Bold;
+                textStyle.alignment = TextAnchor.MiddleCenter;
+                textStyle.normal.textColor = Color.white;
+                backgroundStyle = new GUIStyle(GUI.skin.box);
+                backgroundStyle.normal.background = MakeRoundedRectTexture(400, 200, 20, new Color(0.2f, 0.2f, 0.2f, 0.8f));
+                float windowWidth = position.width;
+                float windowHeight = position.height;
+                Vector2 textSize = textStyle.CalcSize(new GUIContent("APPLICATION IS PLAYING"));
+                Rect backgroundRect = new Rect((windowWidth - textSize.x - 40) / 2, (windowHeight - textSize.y - 20) / 2, textSize.x + 40, textSize.y + 20);
+                Rect textRect = new Rect((windowWidth - textSize.x) / 2, (windowHeight - textSize.y) / 2, textSize.x, textSize.y);
+                GUI.Box(backgroundRect, GUIContent.none, backgroundStyle);
+                GUI.Label(textRect, "APPLICATION IS PLAYING", textStyle);
+            }
+        }
+
+        private Texture2D MakeRoundedRectTexture(int width, int height, int cornerRadius, Color color)
+        {
+            Texture2D texture = new Texture2D(width, height);
+            Color[] pixels = new Color[width * height];
+
+            for (int y = 0; y < height; y++)
+            {
+                for (int x = 0; x < width; x++)
+                {
+                    // Calculate distances to the nearest edge
+                    int xDistance = Mathf.Min(x, width - x);
+                    int yDistance = Mathf.Min(y, height - y);
+
+                    // Calculate distance to the nearest corner
+                    float distanceToCorner = Mathf.Sqrt(Mathf.Pow(xDistance - cornerRadius, 2) + Mathf.Pow(yDistance - cornerRadius, 2));
+
+                    // If inside rounded corner area, set alpha to zero
+                    if (xDistance < cornerRadius && yDistance < cornerRadius && distanceToCorner > cornerRadius)
+                    {
+                        pixels[x + y * width] = Color.clear;
+                    }
+                    else
+                    {
+                        pixels[x + y * width] = color;
+                    }
+                }
+            }
+
+            texture.SetPixels(pixels);
+            texture.Apply();
+
+            return texture;
+        }
+
         private void SaveNode(string filePath = null, bool relative = false)
         {
             string path = filePath;
@@ -908,6 +1005,7 @@ namespace TasukeChan
 
         private void LoadData(string path, bool relative = false)
         {
+            lastpath = path;
             selectedNodes.Clear();
             nodes.Clear();
             catnodes.Clear();
