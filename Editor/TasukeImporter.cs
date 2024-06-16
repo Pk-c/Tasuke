@@ -1,3 +1,4 @@
+#if UNITY_EDITOR
 using UnityEngine;
 
 namespace TasukeChan
@@ -14,3 +15,4 @@ namespace TasukeChan
         }
     }
 }
+#endif
