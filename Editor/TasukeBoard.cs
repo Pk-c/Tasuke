@@ -665,14 +665,18 @@ namespace TasukeChan
 
         void CreateCategory(Vector2 mousePosition)
         {
-            for (int n = 0; n < catnodes.Count; n++)
+            List<int> catId = new List<int>();
+            catId.Clear();
+            foreach (var catnode in catnodes)
             {
-                if (MaxId < catnodes[n].id)
-                {
-                    MaxId = catnodes[n].id;
-                }
+                catId.Add(catnode.id);
             }
-            MaxId++;
+
+            while(catId.Contains(MaxId))
+            {
+                MaxId++;
+            }
+
             TCategoryNode tcn = new TCategoryNode(PickedColor, MaxId, "New Category", new Rect(mousePosition.x, mousePosition.y, 200, 300));
             catnodes.Add(tcn);
             nodes.Add(tcn);
