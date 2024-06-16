@@ -42,7 +42,7 @@ namespace TasukeChan
         public TCategoryNode(Color col, int catid, string title, Rect rect) : base(title, rect)
         {
             id = catid;
-            color = col;
+            color = new Color(col.r, col.g, col.b, col.a);
         }
     }
 
@@ -643,7 +643,7 @@ namespace TasukeChan
             Color newColor = EditorGUI.ColorField(colorFieldRect, GUIContent.none, cnd.color, false, false, false);
             if (EditorGUI.EndChangeCheck())
             {
-                cnd.color = newColor;
+                cnd.color = new Color(newColor.r, newColor.g, newColor.b, newColor.a);
             }
         }
 
