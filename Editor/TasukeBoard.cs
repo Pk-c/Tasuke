@@ -782,9 +782,13 @@ namespace TasukeChan
                     GUI.color = Color.white;
                     GUI.Box(title, cnd.title, headerTitleStyle);
 
-                    HandleColor(cnd, Event.current);
                     HandleResize(cnd, Event.current);
                     HandleEdit(cnd, Event.current);
+
+                    if(selected)
+                    {
+                        HandleColor(cnd, Event.current);
+                    }
                 }
             }
         }
