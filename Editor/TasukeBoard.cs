@@ -83,7 +83,6 @@ namespace TasukeChan
         Texture2D NodeTex = null;
         Texture2D Tasuke = null;
         Texture2D Header = null;
-        Texture2D ResizeTexture = null;
         Texture2D RoundTexture = null;
 
         //Category
@@ -91,6 +90,8 @@ namespace TasukeChan
         private int MaxId = 0;
         private TCategoryNode ReziseId = null;
         private bool isRezising = false;
+        private bool horizontal = false;
+        private bool vertical = false;
         private TCategoryNode EditNode = null;
         private bool isDragging = false;
         private GUIContent[] menuOptions;
@@ -144,7 +145,6 @@ namespace TasukeChan
             NodeTex = AssetDatabase.LoadAssetAtPath<Texture2D>(texturePath + "NodeSelected.png");
             Tasuke = AssetDatabase.LoadAssetAtPath<Texture2D>(texturePath + "Tasuke.png");
             Header = AssetDatabase.LoadAssetAtPath<Texture2D>(texturePath + "Header.png");
-            ResizeTexture = AssetDatabase.LoadAssetAtPath<Texture2D>(texturePath + "Resize.png");
             RoundTexture = MakeRoundedRectTexture(400, 200, 20, new Color(0.2f, 0.2f, 0.2f, 0.8f));
 
             // Load icons and set up menu options
@@ -249,7 +249,29 @@ namespace TasukeChan
 
         private void DrawNonZoomArea()
         {
-            Rect windowRect = new Rect(position.width - Tasuke.width, position.height - Tasuke.height, Tasuke.width, Tasuke.height);
+            float windowWidth = position.width;
+            float windowHeight = position.height;
+
+            // Reference resolution
+            float referenceWidth = 1920.0f;
+            float referenceHeight = 1080.0f;
+
+            // Calculate the scaling factor based on the reference resolution
+            float scaleFactor = Mathf.Min(windowWidth / referenceWidth, windowHeight / referenceHeight);
+
+            // Calculate the new dimensions of the texture based on the scaling factor
+            float drawWidth = Tasuke.width * scaleFactor;
+            float drawHeight = Tasuke.height * scaleFactor;
+
+            // Ensure the texture does not exceed its original size
+            drawWidth = Mathf.Min(drawWidth, Tasuke.width);
+            drawHeight = Mathf.Min(drawHeight, Tasuke.height);
+
+            // Position the texture at the bottom-right corner
+            float drawX = windowWidth - drawWidth;
+            float drawY = windowHeight - drawHeight;
+
+            Rect windowRect = new Rect(drawX, drawY, drawWidth, drawHeight);
             GUI.DrawTexture(windowRect, Tasuke);
         }
 
@@ -571,38 +593,84 @@ namespace TasukeChan
         {
             Rect rect = GetZoomedRectOffset(cat.rect);
 
-            float colorFieldSize = Mathf.Max( 10.0f, 20.0f * (kZoomMax - _zoom ));
-            Rect resizeHandleRect = new Rect(
-                rect.xMax - colorFieldSize,
-                rect.yMax - colorFieldSize,
-                colorFieldSize,
-                colorFieldSize);
+            float resizeHandleSize = Mathf.Max(10.0f, 20.0f * (kZoomMax - _zoom));
+            float edgeMargin = 20.0f; // Distance from the edge to start resizing
 
-            
-            // Draw the resize handle
-            GUI.DrawTexture(resizeHandleRect,ResizeTexture);
+            Rect bottomRightHandleRect = new Rect(
+                rect.xMax - resizeHandleSize,
+                rect.yMax - resizeHandleSize,
+                resizeHandleSize*2.0f,
+                resizeHandleSize*2.0f);
 
-            // Check for mouse events related to resizing
-            if (e.type == EventType.MouseDown && e.button == 0 && resizeHandleRect.Contains(e.mousePosition))
+            Rect bottomEdgeRect = new Rect(
+                rect.xMin + edgeMargin,
+                rect.yMax - resizeHandleSize,
+                rect.width - edgeMargin * 2,
+                resizeHandleSize);
+
+            Rect rightEdgeRect = new Rect(
+                rect.xMax - resizeHandleSize,
+                rect.yMin + edgeMargin,
+                resizeHandleSize,
+                rect.height - edgeMargin * 2);
+
+            // Draw the resize handles
+            EditorGUIUtility.AddCursorRect(bottomEdgeRect, MouseCursor.ResizeVertical);
+            EditorGUIUtility.AddCursorRect(rightEdgeRect, MouseCursor.ResizeHorizontal);
+            EditorGUIUtility.AddCursorRect(bottomRightHandleRect, MouseCursor.ResizeUpLeft);
+
+
+            if (!isRezising)
             {
-                ReziseId = cat;
-                isRezising = true;
-                e.Use();
+                // Check for mouse events related to resizing
+                if (e.type == EventType.MouseDown && e.button == 0)
+                {
+                    if (bottomRightHandleRect.Contains(e.mousePosition))
+                    {
+                        horizontal = true;
+                        vertical = true;
+                        ReziseId = cat;
+                        isRezising = true;
+                        e.Use();
+                    }
+                    else if (bottomEdgeRect.Contains(e.mousePosition))
+                    {
+                        vertical = true;
+                        ReziseId = cat;
+                        isRezising = true;
+                        e.Use();
+                    }
+                    else if (rightEdgeRect.Contains(e.mousePosition))
+                    {
+                        horizontal = true;
+                        ReziseId = cat;
+                        isRezising = true;
+                        e.Use();
+                    }
+                }
             }
 
             if (isRezising && cat == ReziseId)
             {
-                if (e.type == EventType.MouseDrag)
+                if ( e.type == EventType.MouseDrag)
                 {
-                    // Get the mouse position in zoomed coordinates
                     Vector2 zoomedMousePos = e.mousePosition;
 
-                    // Calculate the new width and height based on the zoomed mouse position
-                    float newWidth = Mathf.Max(50, zoomedMousePos.x - rect.x);
-                    float newHeight = Mathf.Max(50, zoomedMousePos.y - rect.y);
+                    float newWidth = rect.width;
+                    float newHeight = rect.height;
+
+                    if (horizontal)
+                    {
+                        newWidth = Mathf.Max(50, zoomedMousePos.x - rect.x);
+                    }
+
+                    if (vertical)
+                    {
+                        newHeight = Mathf.Max(50, zoomedMousePos.y - rect.y);
+                    }
+
                     cat.rect.size = new Vector2(newWidth, newHeight);
 
-                    // Update node categories to reflect the new size
                     CheckNodeCategories();
 
                     e.Use();
@@ -610,6 +678,8 @@ namespace TasukeChan
                 else if (e.type == EventType.MouseUp)
                 {
                     isRezising = false;
+                    horizontal = false;
+                    vertical = false;
                     e.Use();
                 }
             }
@@ -856,15 +926,15 @@ namespace TasukeChan
 
                 Vector2 zoomedMousePosition = ConvertScreenCoordsToZoomCoords(Event.current.mousePosition);
 
+                DrawMenuBar();
+                DrawZoomArea();
                 HandleSelectEvent(Event.current, zoomedMousePosition);
                 DrawGrid();
-                DrawZoomArea();
                 DrawNonZoomArea();
                 DrawSelectionRect();
                 HandleDragAndDrop();
                 UpdateContextMenu();
                 HandleRemove(Event.current);
-                DrawMenuBar();
                 HandleQuickSave();
                 Repaint();
             }
