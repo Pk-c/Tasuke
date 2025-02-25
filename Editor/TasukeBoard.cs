@@ -46,7 +46,7 @@ namespace TasukeChan
         }
     }
 
-
+    [InitializeOnLoad]
     public class TasukeBoard : EditorWindow
     {
         //Zoom
@@ -101,8 +101,9 @@ namespace TasukeChan
         private string lastLoadedFilePath = "";
         private float showSaveMessage = 0.0f;
         private string lastpath = string.Empty;
+        private bool styleInit = false;
 
-        private static bool InitFlag = false;
+        #region Initialization
 
         [MenuItem("Window/Tasuke!")]
         public static void Init()
@@ -112,6 +113,61 @@ namespace TasukeChan
             window.wantsMouseMove = true;
             window.Show();
         }
+
+        [InitializeOnLoadMethod]
+        private static void RegisterDomainReload()
+        {
+            EditorApplication.playModeStateChanged += OnPlayModeChanged;
+            AssemblyReloadEvents.afterAssemblyReload += OnAfterAssemblyReload;
+        }
+
+        private static void OnAfterAssemblyReload()
+        {
+            ResetWindowState();
+        }
+
+        private static void OnPlayModeChanged(PlayModeStateChange change)
+        {
+            if (change == PlayModeStateChange.EnteredEditMode)
+            {
+                ResetWindowState();
+            }
+        }
+
+        private static void ResetWindowState()
+        {
+            TasukeBoard[] windows = Resources.FindObjectsOfTypeAll<TasukeBoard>();
+            foreach (TasukeBoard window in windows)
+            {
+                window.ResetState();
+            }
+        }
+
+        private void ResetState()
+        {
+            isSelecting = false;
+            isDragging = false;
+            isRezising = false;
+            EditNode = null;
+            ReziseId = null;
+            horizontal = false;
+            vertical = false;
+            styleInit = false;
+
+            LoadTextures();
+            
+            selectedNodes.Clear();
+
+            if (!string.IsNullOrEmpty(lastLoadedFilePath) && System.IO.File.Exists(lastLoadedFilePath))
+            {
+                nodes.Clear();
+                catnodes.Clear();
+                LoadData(lastLoadedFilePath, true);
+            }
+
+            Repaint();
+        }
+
 
         public static void Load(string path, bool relative = false)
         {
@@ -124,12 +180,13 @@ namespace TasukeChan
 
         public void OnDisable()
         {
+            styleInit = false;
             selectedNodes.Clear();
             nodes.Clear();
             catnodes.Clear();
         }
 
-        void OnEnable()
+        public void LoadTextures()
         {
             resizeHandleStyle.normal.background = EditorGUIUtility.whiteTexture;
             resizeHandleStyle.normal.textColor = Color.black;
@@ -153,25 +210,15 @@ namespace TasukeChan
             loadIcon.text = "Load Board";
             saveIcon.text = "Save Board";
             menuOptions = new GUIContent[] { loadIcon, saveIcon };
-
-            if (!InitFlag)
-            {
-                EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
-                InitFlag = true;
-            }
         }
 
-        private void OnPlayModeStateChanged(PlayModeStateChange change)
+        void OnEnable()
         {
-            if (change == PlayModeStateChange.ExitingPlayMode)
-            {
-                if (lastpath != string.Empty)
-                {
-                    TasukeBoard window = (TasukeBoard)EditorWindow.GetWindow(typeof(TasukeBoard));
-                    window.Close();
-                    Load(lastpath,true);
-                }
-            }
+            LoadTextures();
+            styleInit = false;
+            wantsMouseMove = true;
+            this.Focus();
+            Repaint();
         }
 
         void BuildStyle()
@@ -223,6 +270,7 @@ namespace TasukeChan
             backgroundStyle = new GUIStyle(GUI.skin.box);
             backgroundStyle.normal.background = RoundTexture;
         }
+        #endregion
 
         #region Zoom
         private Vector2 ConvertScreenCoordsToZoomCoords(Vector2 screenCoords)
@@ -918,7 +966,11 @@ namespace TasukeChan
                 HandlePlayMode();
             else
             {
-                BuildStyle();
+                if(!styleInit)
+                {
+                    BuildStyle();
+                    styleInit = true;
+                }
 
                 _zoomArea = new Rect(0.0f, 0.0f, position.width, position.height);
 
