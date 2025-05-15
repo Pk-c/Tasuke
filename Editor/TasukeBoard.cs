@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using Object = UnityEngine.Object;
 using System.Linq;
 using System.IO;
+using UnityEditor.SceneManagement;
 
 namespace TasukeChan
 {
@@ -98,7 +99,8 @@ namespace TasukeChan
 
         //Params
         private string windowsTitle = "New Tasuke Board";
-        private string lastLoadedFilePath = "";
+        private const string TasukeFile = "TasukeFile";
+        private string lastLoadedFilePath { get { return EditorPrefs.GetString(TasukeFile, ""); } set{ EditorPrefs.SetString(TasukeFile,value); } }
         private float showSaveMessage = 0.0f;
         private string lastpath = string.Empty;
         private bool styleInit = false;
@@ -372,6 +374,29 @@ namespace TasukeChan
                     if (e.button == 0)
                     {
                         TNode nodeUnderMouse = GetNodeUnderMouse(mousePosition);
+
+                        if (nodeUnderMouse != null)
+                        {
+                            if (e.clickCount == 2 && nodeUnderMouse is TObjectNode objNode)
+                            {
+                                if (objNode.obj != null)
+                                {
+                                    string path = AssetDatabase.GetAssetPath(objNode.obj);
+
+                                    if (string.IsNullOrEmpty(path))
+                                        return;
+
+                                    if (path.EndsWith(".unity"))
+                                    {
+                                        if (EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
+                                        {
+                                            EditorSceneManager.OpenScene(path);
+                                            return;
+                                        }
+                                    }
+                                }
+                            }
+                        }
 
                         if (nodeUnderMouse != null && selectedNodes.Contains(nodeUnderMouse))
                         {

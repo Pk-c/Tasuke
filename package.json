@@ -1,7 +1,7 @@
 {
   "name": "com.chromaticdream.tasuke",
   "displayName": "Tasuke Board",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "unity": "2020.3",
   "description": "A unity plugin to help organise assets",
   "category": "Editor Tools",
